@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rpa-api
+  labels:
+    app: rpa-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rpa-api
+  template:
+    metadata:
+      labels:
+        app: rpa-api
+    spec:
+      containers:
+        - name: api
+          image: rpa-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          env:
+            - name: MONGODB_URL
+              value: "mongodb://rpa-mongo:27017"
+            - name: REDIS_URL
+              value: "redis://rpa-redis:6379/0"
+            - name: CELERY_BROKER_URL
+              value: "redis://rpa-redis:6379/0"
+            - name: CELERY_RESULT_BACKEND
+              value: "redis://rpa-redis:6379/0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rpa-api
+spec:
+  selector:
+    app: rpa-api
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: LoadBalancer

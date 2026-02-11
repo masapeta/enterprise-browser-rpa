@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  api:
+    build: ./backend
+    container_name: rpa_api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ./backend:/app
+
+  worker:
+    build: ./backend
+    container_name: rpa_worker
+    # Running celery worker with optimizations for async io
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - mongo
+      - redis
+      - api
+    volumes:
+      - ./backend:/app
+    # IPC host is needed for some browser operations in docker
+    ipc: host
+
+  mongo:
+    image: mongo:6.0
+    container_name: rpa_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7.2
+    container_name: rpa_redis
+    ports:
+      - "6379:6379"
+
+  flower:
+    image: mher/flower
+    container_name: rpa_flower
+    command: celery flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+
+volumes:
+  mongo_data:

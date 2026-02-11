@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rpa-worker
+  labels:
+    app: rpa-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rpa-worker
+  template:
+    metadata:
+      labels:
+        app: rpa-worker
+    spec:
+      containers:
+        - name: worker
+          image: rpa-backend:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "celery",
+              "-A",
+              "app.worker.celery_app",
+              "worker",
+              "--loglevel=info",
+              "--concurrency=4",
+            ]
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          env:
+            - name: MONGODB_URL
+              value: "mongodb://rpa-mongo:27017"
+            - name: REDIS_URL
+              value: "redis://rpa-redis:6379/0"
+            - name: CELERY_BROKER_URL
+              value: "redis://rpa-redis:6379/0"
+            - name: CELERY_RESULT_BACKEND
+              value: "redis://rpa-redis:6379/0"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: rpa-worker-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: rpa-worker
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

@@ -93,5 +93,3 @@ cd backend
 python -m pytest tests/test_functional.py
 ```
 # enterprise-browser-rpa
-# enterprise-browser-rpa
-# enterprise-browser-rpa

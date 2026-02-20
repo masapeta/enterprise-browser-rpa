@@ -19,11 +19,17 @@ export default function SessionControl({ onSessionCreated }: SessionControlProps
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ task }),
             });
+            
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || 'Failed to start session');
+            }
+
             const data = await res.json();
             onSessionCreated(data.session_id);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert('Failed to start session');
+            alert(err.message || 'Failed to start session');
         } finally {
             setLoading(false);
         }

@@ -16,7 +16,7 @@ class BrowserManager:
             # We can control this via env var or simply default to Headless=True for server.
             # For "Live View", we might need to stream screenshots/video anyway.
             self.browser = await self.playwright.chromium.launch(
-                headless=True, 
+                headless=settings.HEADLESS, 
                 args=["--no-sandbox", "--disable-setuid-sandbox"]
             )
             logger.info("Browser launched")

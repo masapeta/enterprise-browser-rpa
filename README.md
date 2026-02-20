@@ -4,8 +4,9 @@ A scalable, production-grade Browser Automation Platform powered by LLMs (Search
 
 ## 🚀 Key Features
 -   **Autonomous Agents**: Uses LLMs (Grok, Azure OpenAI, GPT-4) to plan and execute web tasks.
--   **Session Isolation**: Every agent runs in a strictly isolated Playwright browser context.
--   **Real-time Observability**: Live logs and screen updates streamed via WebSockets.
+-   **Conversational Chat UI**: Interact with the agent naturally via a continuous Chat panel. Send follow-up tasks to the same agent seamlessly.
+-   **Persistent Browser Context**: Every agent runs in a strictly isolated Playwright browser context that persists across multiple instructions, enabling complex multi-step workflows.
+-   **Real-time Observability**: Live logs, streaming screenshots, and chat updates routed via bidirectional WebSockets and Redis Pub/Sub.
 -   **Scalable Architecture**: Decoupled Worker nodes (Celery) separate from the API.
 -   **Enterprise Ready**: Structured logging, audit trails (MongoDB), and RBAC-ready design.
 
@@ -69,12 +70,12 @@ The easiest way to run the platform is using Docker Compose.
 
 You can switch providers in `backend/.env`:
 
-**Grok (X.AI)**
+**Groq (LPU)**
 ```ini
-LLM_PROVIDER=grok
-LLM_BASE_URL=https://api.grok.x.ai/v1
-LLM_API_KEY=your_key
-LLM_MODEL=grok-1
+LLM_PROVIDER=groq
+LLM_BASE_URL=https://api.groq.com/openai/v1
+LLM_API_KEY=your_groq_key
+LLM_MODEL=llama3-70b-8192
 ```
 
 **Azure OpenAI**

@@ -39,16 +39,46 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     redis = await get_redis()
     pubsub = redis.pubsub()
     
-    # Subscribe to session updates (implementation detail: Orchestrator needs to publish events)
-    # For now, we'll just poll session state or assume a channel exists
     channel = f"session_updates:{session_id}"
     await pubsub.subscribe(channel)
+    input_channel = f"session_input:{session_id}"
 
-    try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True)
-            if message:
-                await websocket.send_text(message["data"])
-            await asyncio.sleep(0.1)
-    except WebSocketDisconnect:
-        await pubsub.unsubscribe(channel)
+    async def receive_from_client():
+        try:
+            while True:
+                data = await websocket.receive_text()
+                await redis.publish(input_channel, data)
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            pass
+
+    async def send_to_client():
+        try:
+            while True:
+                message = await pubsub.get_message(ignore_subscribe_messages=True)
+                if message:
+                    data = message["data"]
+                    if isinstance(data, bytes):
+                        data = data.decode('utf-8')
+                    try:
+                        await websocket.send_text(data)
+                    except Exception:
+                        break
+                await asyncio.sleep(0.05)
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            pass
+
+    send_task = asyncio.create_task(send_to_client())
+    recv_task = asyncio.create_task(receive_from_client())
+    
+    done, pending = await asyncio.wait(
+        [send_task, recv_task],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    for task in pending:
+        task.cancel()
+    
+    await pubsub.unsubscribe(channel)
